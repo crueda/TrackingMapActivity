@@ -155,70 +155,22 @@ $(function() {
     //data.message = 'new tracking data';
     //addChatMessage(data);
     //alert(data);
-    console.log(data);
+    var lat = data.data.location.coordinates[1];
+    var lon = data.data.location.coordinates[0];
+    var vehicleLicense = data.data.vehicle_license;
+    var trackingId = data.data.tracking_id;
+    //addAnimationFeature(lat, lon);
+    addTrackingPointEffect(vehicleLicense, trackingId, lat, lon);
   }
 
-  // Updates the typing event
-  function updateTyping () {
-    if (connected) {
-      if (!typing) {
-        typing = true;
-        socket.emit('typing');
-      }
-      lastTypingTime = (new Date()).getTime();
 
-      setTimeout(function () {
-        var typingTimer = (new Date()).getTime();
-        var timeDiff = typingTimer - lastTypingTime;
-        if (timeDiff >= TYPING_TIMER_LENGTH && typing) {
-          socket.emit('stop typing');
-          typing = false;
-        }
-      }, TYPING_TIMER_LENGTH);
-    }
-  }
 
-  // Gets the 'X is typing' messages of a user
-  function getTypingMessages (data) {
-    return $('.typing.message').filter(function (i) {
-      return $(this).data('username') === data.username;
-    });
-  }
 
-  // Gets the color of a username through our hash function
-  function getUsernameColor (username) {
-    // Compute hash code
-    var hash = 7;
-    for (var i = 0; i < username.length; i++) {
-       hash = username.charCodeAt(i) + (hash << 5) - hash;
-    }
-    // Calculate color
-    var index = Math.abs(hash % COLORS.length);
-    return COLORS[index];
-  }
 
-  // Keyboard events
 
-  $window.keydown(function (event) {
-    // Auto-focus the current input when a key is typed
-    if (!(event.ctrlKey || event.metaKey || event.altKey)) {
-      $currentInput.focus();
-    }
-    // When the client hits ENTER on their keyboard
-    if (event.which === 13) {
-      if (username) {
-        sendMessage();
-        socket.emit('stop typing');
-        typing = false;
-      } else {
-        setUsername();
-      }
-    }
-  });
 
-  $inputMessage.on('input', function() {
-    updateTyping();
-  });
+ 
+
 
   // Click events
 
@@ -276,7 +228,7 @@ $(function() {
   // Whenever the server emits 'new tracking data', update the map
   socket.on('new tracking data', function (data) {
     //alert("en evento");
-    console.log("en evento");
+    //console.log("en evento");
     newTrackingData(data);
   });
 

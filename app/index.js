@@ -4,6 +4,8 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('../')(server);
 var port = process.env.PORT || 7778;
+var mongoose = require('mongoose');
+var sleep = require('sleep');
 
 server.listen(port, function () {
   console.log('Server listening at port %d', port);
@@ -12,7 +14,15 @@ server.listen(port, function () {
 // Routing
 app.use(express.static(__dirname + '/public'));
 
-// Chatroom
+var dbMongoName = 'demos';
+var dbMongoHost = '192.168.28.248';
+var dbMongoPort = 27017;
+
+mongoose.connect('mongodb://' + dbMongoHost + ':' + dbMongoPort + '/' + dbMongoName, { server: { reconnectTries: 3, poolSize: 5 } }, function (error) {
+  if (error) {
+    log.info(error);
+  }
+});
 
 var numUsers = 0;
 
@@ -22,64 +32,60 @@ io.on('connection', function (socket) {
     console.log('Un cliente se ha conectado');
     //socket.emit('new tracking data', 'messages');
 
+
 var temporal = require("temporal");
 var startIndex = 0;
-var endIndex = 10;
+var endIndex = 1000;
 var incrementIndex = 1;
-var delay = 1500;
+var delay = 10000;
 var array = [1, 2, 3, 4, 5];
 var tasks = [];
 
 
+        
 while ( startIndex < endIndex ) {
-  for ( var i = 0; i < array.length; i++ ) {
     tasks.push({
       delay: delay,
       task: function() {
-        console.log(i, Date.now());
+        var actualEpoch = Date.now();
+        var searchEpoch = actualEpoch - 10000;
+        console.log(searchEpoch);
         // do stuff
-        socket.emit('new tracking data', {
-          geojson: '[{"geometry": {"type": "Point", "coordinates": [8.3167, 40.5626]}, "type": "Feature", "properties": {"alias": "FUSI Matteo", "alarm_state": "0", "license": "092", "vehicle_state": "", "pos_date": "1455455257500", "tracking_state": "STOP", "speed": 0.1000, "heading": 116.6000}}]'
+
+        mongoose.connection.db.collection('TRACKING1', function (err, collection) {
+          //collection.find({"pos_date": {$gt:1490341501226}}).toArray(function (err, docs) {
+          collection.find({"pos_date": {$gt:searchEpoch}}).toArray(function (err, docs) {
+            if (docs!=undefined) {
+              for (var i=0; i<docs.length; i++) {
+                 console.log("new tracking: " + docs[i].vehicle_license + " - trackingId: " + docs[i].tracking_id + " - posDate: " + docs[i].pos_date);
+                 socket.emit('new tracking data', {
+                    data: docs[i]
+                 });
+              }
+            }
+          });
         });
+
+        /*socket.emit('new tracking data', {
+          geojson: '[{"geometry": {"type": "Point", "coordinates": [8.3167, 40.5626]}, "type": "Feature", "properties": {"alias": "FUSI Matteo", "alarm_state": "0", "license": "092", "vehicle_state": "", "pos_date": "1455455257500", "tracking_state": "STOP", "speed": 0.1000, "heading": 116.6000}}]'
+        });*/
       }
     });
-  }
+  
 
   startIndex = startIndex + incrementIndex;
 
-  tasks.push({
-    delay: delay,
-    task: function() {
-      console.log(startIndex, Date.now());
-      // do stuff
-    }
-  })
+
 }
 
 
 temporal.queue(tasks);
 
-    //socket.broadcast.emit('new tracking data', {
-      /*
-    for (var i=0; i<5; i++) {
-      socket.emit('new tracking data', {
-        geojson: '[{"geometry": {"type": "Point", "coordinates": [8.3167, 40.5626]}, "type": "Feature", "properties": {"alias": "FUSI Matteo", "alarm_state": "0", "license": "092", "vehicle_state": "", "pos_date": "1455455257500", "tracking_state": "STOP", "speed": 0.1000, "heading": 116.6000}}]'
-      });
-    }
 
-setTimeout(function() {
-  console.log('hello world!');
-}, 5000);
-*/
 
-  // when the client emits 'new message', this listens and executes
-  socket.on('new message', function (data) {
-    // we tell the client to execute 'new message'
-    socket.broadcast.emit('new message', {
-      username: socket.username,
-      message: data
-    });
-  });
+
+
+
 
   // when the client emits 'add user', this listens and executes
   socket.on('add user', function (username) {
@@ -99,19 +105,7 @@ setTimeout(function() {
     });
   });
 
-  // when the client emits 'typing', we broadcast it to others
-  socket.on('typing', function () {
-    socket.broadcast.emit('typing', {
-      username: socket.username
-    });
-  });
 
-  // when the client emits 'stop typing', we broadcast it to others
-  socket.on('stop typing', function () {
-    socket.broadcast.emit('stop typing', {
-      username: socket.username
-    });
-  });
 
   // when the user disconnects.. perform this
   socket.on('disconnect', function () {

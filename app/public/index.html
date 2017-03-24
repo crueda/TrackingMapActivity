@@ -19,11 +19,8 @@
 
   <script src="./js/ol3-layerswitcher.js" type="text/javascript"></script>
   
-  <script type="text/javascript" src="/bower_components/jquery/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.js"></script>
-  <script type="text/javascript" src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
-  <script type="text/javascript" src="/bower_components/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
-  <link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+
   <script src="https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/datejs/date.js"></script>
   <script type="text/javascript" src="https://viglino.github.io/ol3-ext/featureanimation/featureanimation.js"></script>
   <script type="text/javascript" src="https://viglino.github.io/ol3-ext/featureanimation/dropanimation.js"></script>
@@ -92,7 +89,6 @@
   </style>
 
   <script type="text/javascript">    
-   var uuid = null;
    var username = null;
    var actualPosOverlay = null;
    var defaultVehicleLastLat = 0;
@@ -115,67 +111,11 @@
    var iconCoverVehicle = "";
    var iconRealTimeVehicle = "";
    var iconAlarmVehicle = "";
+   var map;
 
  </script>
 
  <script type="text/javascript">    
-  function getUUID() {
-    // capturamos la url
-    var loc = document.location.href;
-    // si existe el interrogante
-    if(loc.indexOf('?')>0) {
-      // cogemos la parte de la url que hay despues del interrogante
-      var getString = loc.split('?')[1];
-      // obtenemos un array con cada clave=valor
-      var GET = getString.split('&');
-      var get = {};
-
-      // recorremos todo el array de valores
-      for(var i = 0, l = GET.length; i < l; i++){
-        var tmp = GET[i].split('=');
-        get[tmp[0]] = unescape(decodeURI(tmp[1]));
-        if (unescape(decodeURI(tmp[0])) == 'uuid')
-          return unescape(decodeURI(tmp[1]));
-      }
-      return null;
-    }
-  }
-
-  function reloadVehicleData() {
-    $.getJSON( '/api/watch/'+uuid, function( data ) {
-     if (data.result=='nok') {
-      $('#myModalMsgLabel').text("Error al recuperar los datos del vehículo");
-      $('#myModalMsgLabel2').text("Por favor, informe del problema a logistica@kyroslbs.com");
-      $('#myModalMsgLabel').css({ "color" : 'red' });
-      $('#myModalMsg').modal('show'); 
-      document.getElementById('attr-loading').style.display = 'none';
-    } else {
-
-      var trackingId = data.data.tracking[0].tracking_id;
-      var longitude = data.data.tracking[0].location.coordinates[0];
-      var latitude = data.data.tracking[0].location.coordinates[1];
-      var geocoding = data.data.tracking[0].geocoding;
-      var heading = data.data.tracking[0].heading;
-      var speed = data.data.tracking[0].speed;
-      var alarmActivated = data.data.tracking[0].alarm_activated;
-      var posDate = data.data.tracking[0].pos_date;
-      var deviceId = data.data.tracking[0].deviceId;
-
-      processDevice (trackingId,vehicleLicense,aliasVehicle,longitude,latitude,geocoding,speed,heading,alarmActivated, posDate, deviceId);
-
-
-         // comprobar eventos    
-         if (data.data.tracking[0].events.length>0) {
-          for (var i=0; i<data.data.tracking[0].events.length; i++) {
-            addTrackingPointEvent(vehicleLicense,trackingId,data.data.tracking[0].events[i].event_type, data.data.tracking[0].events[i].event_date,latitude,longitude);
-          }
-        }
-
-        moveMap2Vehicle(vehicleLicense);    
-        
-      }
-    }); 
-  }
 
   function isMobile(){
   //return true;
@@ -187,7 +127,11 @@
     (navigator.userAgent.match(/iPad/i)) ||
     (navigator.userAgent.match(/BlackBerry/))
     );
-}
+  }
+
+
+     
+
 
 function loadVehicleIconSync(vehicleLicense) {
   // Leer el icono de un vehiculo en modo sincrono
@@ -236,13 +180,13 @@ function initVehicleData() {
           addTrackingPointEvent(vehicleLicense,trackingId,data.data.tracking[0].events[i].event_type, data.data.tracking[0].events[i].event_date,latitude,longitude);
         }
       }
-      
+
       centerMap(longitude, latitude);
 
       document.getElementById('attr-loading').style.display = 'none';
     }
   });
- 
+
 }
 
 function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, lat, lon) {
@@ -265,14 +209,14 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
   })];
 
   iconFeature.setStyle(iconStyle);
-  
+
   vehiclesRealTimeSource.addFeature(iconFeature); 
 }
 
 </script>
 
 <script>
- window.onload = function() { setInterval(reloadVehicleData,5000);};
+ //window.onload = function() { setInterval(reloadVehicleData,5000);};
  
  $(document).ready(function() {
   $.ajaxSetup({ cache: false });
@@ -287,10 +231,6 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
 
     }
 
-    document.getElementById('attr-loading').style.display = 'block';
-
-    uuid=getUUID(); 
-    initVehicleData();
 
     $('#tooltipHeader').css('background-color', '#F7BE81');
   });  //ready
@@ -300,7 +240,7 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
 <script>
 
   function closeTooltip() {
-    
+
     var op = 1;  // initial opacity
     var timer = setInterval(function () {
       if (op <= 0.1){
@@ -340,7 +280,7 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
   function getEventIconSmall(eventType) {
     return './images/' + getEventName(eventType) + '_info_16.png'; 
   }
-  
+
   function updateTooltipData() {
     var date = new Date(dateVehicle);
     var year = date.getFullYear();
@@ -369,7 +309,7 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
   }
 
   function openTooltip(vehicleLicense) {
-    
+
     if (iconBase64Vehicle!=null && iconBase64Vehicle!='') {
       document.getElementById('tooltipIcon').innerHTML = "<img src='data:image/png;base64," + iconBase64Vehicle + "'/>";      
     } else {
@@ -442,7 +382,7 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
 
 </head>
 <body>
- 
+
   <div class="modal fade" id="myModalMsg" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -491,7 +431,7 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
             <li class="active"><a href="#details" data-toggle="tab">Detalles</a></li>
             <li><a href="#photo" data-toggle="tab">Foto</a></li>
           </ul>
-          
+
           <div class="tab-content">
             <br>
             <div id="details" class="tab-pane fade in active">
@@ -522,8 +462,8 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
                 </tr>
               </table>
             </div>
-            
-            
+
+
 
 
             <div id="photo" class="tab-pane fade">
@@ -557,7 +497,7 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
         <div class="modal-body">
 
           <div class="form-group">
-            
+
             <table border="0">
               <tr>
                 <td><b>Fecha</b></td>
@@ -708,7 +648,7 @@ function addTrackingPointEvent(vehicleLicense,trackingId,eventType, eventDate, l
         maxZoom:22,
         minZoom:3
       });
-      
+
       var pan = ol.animation.pan({
         duration: 3000,
         source:  (map.getView().getCenter()),
@@ -836,8 +776,9 @@ function addLineTracking(vehicleLicense, trackingId1, lat1, lon1, trackingId2, l
   if (features.length > 10) {
     vehiclesPointSource.removeFeature(features[0]);
   }*/
-  
+
 }
+
 
 
 function centerMap(lon, lat) {
@@ -885,7 +826,7 @@ var kyrosGroup = new ol.layer.Group({
   layers: [vehiclesLineLayer, vehiclesPointLayer, vehiclesRealTimeLayer]
 });
 
-var map = new ol.Map({
+map = new ol.Map({
   layers: [
   new ol.layer.Group({
    'title': 'Mapas',
@@ -903,6 +844,9 @@ var map = new ol.Map({
     minZoom:3
   })
 });
+
+
+
 
 if (!isMobile()) {
   var layerSwitcher = new ol.control.LayerSwitcher({
@@ -934,48 +878,90 @@ map.addControl(new ol.control.MousePosition({
   }
 }));
 
+
+ var source = new ol.source.Vector({
+        wrapX: false
+      });
+      var vector = new ol.layer.Vector({
+        source: source
+      });
+
+function addAnimationFeature(lat, lon) {
+//function addAnimationFeature() {
+
+        //var lon = Math.random() * 360 - 180;
+        //var lat = Math.random() * 180 - 90;
+
+
+        var geom = new ol.geom.Point(ol.proj.transform([lon, lat],
+            'EPSG:4326', 'EPSG:3857'));
+        var feature = new ol.Feature(geom);
+        source.addFeature(feature);
+
+map.getView().fit(source.getExtent(), map.getSize());
+
+      }
+
+
+      var duration = 3000;
+      function flash(feature) {
+        var start = new Date().getTime();
+        var listenerKey;
+
+        function animate(event) {
+          var vectorContext = event.vectorContext;
+          var frameState = event.frameState;
+          var flashGeom = feature.getGeometry().clone();
+          var elapsed = frameState.time - start;
+          var elapsedRatio = elapsed / duration;
+          // radius will be 5 at start and 30 at end.
+          var radius = ol.easing.easeOut(elapsedRatio) * 25 + 5;
+          var opacity = ol.easing.easeOut(1 - elapsedRatio);
+
+          var style = new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: radius,
+              snapToPixel: false,
+              stroke: new ol.style.Stroke({
+                color: 'rgba(255, 0, 0, ' + opacity + ')',
+                width: 0.25 + opacity
+              })
+            })
+          });
+
+          vectorContext.setStyle(style);
+          vectorContext.drawGeometry(flashGeom);
+          if (elapsed > duration) {
+            ol.Observable.unByKey(listenerKey);
+            return;
+          }
+          // tell OpenLayers to continue postcompose animation
+          map.render();
+        }
+        listenerKey = map.on('postcompose', animate);
+      }
+
+      source.on('addfeature', function(e) {
+        flash(e.feature);
+      });
+
+//      window.setInterval(addAnimationFeature, 1000);      
+//      window.setInterval(addAnimationFeature, 1000);      
+//addAnimationFeature(-5.22, 41.34);
+
+
+
 //*****************
 
 
-function addFeaturePointAt(p) { 
-  mapPointSource.clear();
 
-  var f, r = map.getView().getResolution() *10;
-  
-  var geo_point = new ol.geom.Point(ol.proj.transform([p[0], p[1]], 'EPSG:4326', 'EPSG:3857'));
-  var f = new ol.Feature({
-    geometry: geo_point,
-    id: 0,
-    elementId: 'positionPoint',
-    lon: p[0],
-    lat: p[1],
-    name: "Posición sobre el mapa"  
-  });
-
-
-  mapPointSource.addFeature(f);
-
-  mapPointLayer.animateFeature (f, 
-    [ new ol.featureAnimation["Drop"](
-      { speed: Number(1.4), 
-        duration: Number(260),
-        side: false
-      }),
-    new ol.featureAnimation[
-    "Bounce"](
-      { speed: Number(0.8), 
-        duration: Number(760),
-        horizontal: /Slide/.test("Shake")
-      })
-    ]);
-}
 
 
 function addTrackingPointEffect(vehicleLicense, trackingId, lat, lon) { 
   if (lat!=0) {
 
     var f, r = map.getView().getResolution() *10;
-    
+
     var geo_point = new ol.geom.Point(ol.proj.transform([lon, lat], 'EPSG:4326', 'EPSG:3857'));
     var f = new ol.Feature({
       geometry: geo_point,
@@ -1008,6 +994,7 @@ function addTrackingPointEffect(vehicleLicense, trackingId, lat, lon) {
 
 //***
 
+
 var info = $('#info');
 info.tooltip({
  animation: false,
@@ -1023,10 +1010,10 @@ var displayFeatureInfo = function(pixel) {
    return feature;
  });
  if (feature) {
-   info.tooltip('hide')
-   .attr('data-original-title', feature.get('name'))
-   .tooltip('fixTitle')
-   .tooltip('show');
+             info.tooltip('hide')
+             .attr('data-original-title', feature.get('name'))
+             .tooltip('fixTitle')
+             .tooltip('show');
 
              //info.tooltip('show');
 
@@ -1036,16 +1023,16 @@ var displayFeatureInfo = function(pixel) {
            }
          };
 
-         var displayTooltipInfo = function(evt) {
-          info.css({
-           left: evt.pixel[0] + 'px',
-           top: (evt.pixel[1] - 15) + 'px'
-         });
-          var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
-            return feature;
-          });
-          if (feature) {
-            if (feature.get('elementId')=='device') {
+var displayTooltipInfo = function(evt) {
+  info.css({
+   left: evt.pixel[0] + 'px',
+   top: (evt.pixel[1] - 15) + 'px'
+  });
+  var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
+    return feature;
+  });
+  if (feature) {
+    if (feature.get('elementId')=='trackingPoint') {
     //if (isMobile()) {
       openTooltip(feature.get('id'));
     //} else {
@@ -1063,20 +1050,21 @@ var displayFeatureInfo = function(pixel) {
   }
 };
 
-map.on('pointermove', function(evt) {
-  if (evt.dragging) {
-    info.tooltip('hide');
-    return;
-  }
-  displayFeatureInfo(map.getEventPixel(evt.originalEvent));
-});        
-
-map.on('singleclick', function(evt) {
-  displayTooltipInfo(evt);
+  map.on('pointermove', function(evt) {
+    if (evt.dragging) {
+      info.tooltip('hide');
+      return;
+    }
+    displayFeatureInfo(map.getEventPixel(evt.originalEvent));
+  });        
+         
+  map.on('singleclick', function(evt) {
+    displayTooltipInfo(evt);
     //if (!isMobile()) {
     //   closeTooltip();
     //}
   });
+
 
 </script>
 </body>
