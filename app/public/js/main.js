@@ -74,79 +74,23 @@ $(function() {
     addMessageElement($el, options);
   }
 
-  // Adds the visual chat message to the message list
-  function addChatMessage (data, options) {
-    // Don't fade the message in if there is an 'X was typing'
-    var $typingMessages = getTypingMessages(data);
-    options = options || {};
-    if ($typingMessages.length !== 0) {
-      options.fade = false;
-      $typingMessages.remove();
-    }
+ 
 
-    var $usernameDiv = $('<span class="username"/>')
-      .text(data.username)
-      .css('color', getUsernameColor(data.username));
-    var $messageBodyDiv = $('<span class="messageBody">')
-      .text(data.message);
 
-    var typingClass = data.typing ? 'typing' : '';
-    var $messageDiv = $('<li class="message"/>')
-      .data('username', data.username)
-      .addClass(typingClass)
-      .append($usernameDiv, $messageBodyDiv);
 
-    addMessageElement($messageDiv, options);
-  }
-
-  // Adds the visual chat typing message
-  function addChatTyping (data) {
-    data.typing = true;
-    data.message = 'is typing';
-    addChatMessage(data);
-  }
-
-  // Removes the visual chat typing message
-  function removeChatTyping (data) {
-    getTypingMessages(data).fadeOut(function () {
-      $(this).remove();
-    });
-  }
-
-  // Adds a message element to the messages and scrolls to the bottom
-  // el - The element to add as a message
-  // options.fade - If the element should fade-in (default = true)
-  // options.prepend - If the element should prepend
-  //   all other messages (default = false)
-  function addMessageElement (el, options) {
-    var $el = $(el);
-
-    // Setup default options
-    if (!options) {
-      options = {};
-    }
-    if (typeof options.fade === 'undefined') {
-      options.fade = true;
-    }
-    if (typeof options.prepend === 'undefined') {
-      options.prepend = false;
-    }
-
-    // Apply options
-    if (options.fade) {
-      $el.hide().fadeIn(FADE_TIME);
-    }
-    if (options.prepend) {
-      $messages.prepend($el);
-    } else {
-      $messages.append($el);
-    }
-    $messages[0].scrollTop = $messages[0].scrollHeight;
-  }
-
-  // Prevents input from having injected markup
-  function cleanInput (input) {
-    return $('<div/>').text(input).text();
+ // init tracking data
+  function initTrackingData (data) {
+    var lat = data.data.location.coordinates[1];
+    var lon = data.data.location.coordinates[0];
+    var deviceId = data.data.device_id;
+    var vehicleLicense = data.data.vehicle_license;
+    var posDate = data.data.pos_date;
+    var geocoding = data.data.geocoding;
+    var trackingId = data.data.tracking_id;
+    var speed = data.data.speed;
+    var heading = data.data.heading;
+    addAnimationFeature(lat, lon);
+    addTrackingPointInit(deviceId, vehicleLicense, trackingId, posDate, geocoding, lat, lon, speed, heading);
   }
 
   // New tracking data
@@ -161,7 +105,9 @@ $(function() {
     var speed = data.data.speed;
     var heading = data.data.heading;
     addAnimationFeature(lat, lon);
+    addLineTracking(vehicleLicense, trackingIdDict[vehicleLicense], latDict[trackingIdDict[vehicleLicense]], lonDict[trackingIdDict[vehicleLicense]], trackingId, lat, lon);
     addTrackingPointEffect(deviceId, vehicleLicense, trackingId, posDate, geocoding, lat, lon, speed, heading);
+
   }
 
 
@@ -198,32 +144,14 @@ $(function() {
     addParticipantsMessage(data);
   });
 
-  // Whenever the server emits 'new message', update the chat body
-  socket.on('new message', function (data) {
-    addChatMessage(data);
-  });
 
-  // Whenever the server emits 'user joined', log it in the chat body
-  socket.on('user joined', function (data) {
-    log(data.username + ' joined');
-    addParticipantsMessage(data);
-  });
 
-  // Whenever the server emits 'user left', log it in the chat body
-  socket.on('user left', function (data) {
-    log(data.username + ' left');
-    addParticipantsMessage(data);
-    removeChatTyping(data);
-  });
 
-  // Whenever the server emits 'typing', show the typing message
-  socket.on('typing', function (data) {
-    addChatTyping(data);
-  });
-
-  // Whenever the server emits 'stop typing', kill the typing message
-  socket.on('stop typing', function (data) {
-    removeChatTyping(data);
+  // Whenever the server emits 'new tracking data', update the map
+  socket.on('init tracking data', function (data) {
+    //alert("en evento");
+    //console.log("en evento");
+    initTrackingData(data);
   });
 
   // Whenever the server emits 'new tracking data', update the map
