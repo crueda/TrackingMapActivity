@@ -151,16 +151,17 @@ $(function() {
 
   // New tracking data
   function newTrackingData (data) {
-    //data.typing = true;
-    //data.message = 'new tracking data';
-    //addChatMessage(data);
-    //alert(data);
     var lat = data.data.location.coordinates[1];
     var lon = data.data.location.coordinates[0];
+    var deviceId = data.data.device_id;
     var vehicleLicense = data.data.vehicle_license;
+    var posDate = data.data.pos_date;
+    var geocoding = data.data.geocoding;
     var trackingId = data.data.tracking_id;
-    //addAnimationFeature(lat, lon);
-    addTrackingPointEffect(vehicleLicense, trackingId, lat, lon);
+    var speed = data.data.speed;
+    var heading = data.data.heading;
+    addAnimationFeature(lat, lon);
+    addTrackingPointEffect(deviceId, vehicleLicense, trackingId, posDate, geocoding, lat, lon, speed, heading);
   }
 
 

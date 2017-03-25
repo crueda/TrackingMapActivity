@@ -37,7 +37,7 @@ var temporal = require("temporal");
 var startIndex = 0;
 var endIndex = 1000;
 var incrementIndex = 1;
-var delay = 10000;
+var delay = 2000;
 var array = [1, 2, 3, 4, 5];
 var tasks = [];
 
@@ -48,7 +48,7 @@ while ( startIndex < endIndex ) {
       delay: delay,
       task: function() {
         var actualEpoch = Date.now();
-        var searchEpoch = actualEpoch - 10000;
+        var searchEpoch = actualEpoch - 2000;
         console.log(searchEpoch);
         // do stuff
 
